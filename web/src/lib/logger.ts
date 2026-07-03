@@ -10,7 +10,7 @@ import type { GenerationParams } from './inference'
 // assoluto a quello del sito. Sul dominio nostro resta il path relativo.
 const API_BASE =
   typeof window !== 'undefined' && window.location.host.endsWith('.hf.space')
-    ? 'https://nicu.mango-dev.space'
+    ? 'https://nicu.chat'
     : ''
 const ENDPOINT = API_BASE + '/api/log'
 

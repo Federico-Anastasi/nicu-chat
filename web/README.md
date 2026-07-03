@@ -4,7 +4,7 @@ Chat interface for **Nicu**, a ~20M-parameter toy-AI that runs **entirely on
 your device** (browser/phone): inference is fully client-side, no model
 server involved.
 
-> **Live:** https://nicu.mango-dev.space
+> **Live:** https://nicu.chat
 
 ## Active model
 
@@ -160,7 +160,7 @@ web/
 ## Logging
 
 `src/lib/logger.ts` fire-and-forget-POSTs each exchange to `/api/log`. This
-is how the live site (nicu.mango-dev.space) collects conversations to improve
+is how the live site (nicu.chat) collects conversations to improve
 the model — it's disclosed to users via the privacy line in the UI. There is
 no backend included in this repo; without one, logging just fails silently
 (harmless), including in local dev.

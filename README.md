@@ -43,7 +43,7 @@ doing next-token prediction.
 
 ## Try it
 
-**https://nicu.mango-dev.space** (soon: `nicu.chat`)
+**https://nicu.chat**
 
 Everything after the page loads runs on your device. No account, no server
 doing inference, works offline once cached.
