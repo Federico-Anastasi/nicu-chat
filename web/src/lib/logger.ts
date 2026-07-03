@@ -6,7 +6,13 @@
 
 import type { GenerationParams } from './inference'
 
-const ENDPOINT = '/api/log'
+// Su host terzi (es. lo Space Hugging Face) non c'è il backend: si punta in
+// assoluto a quello del sito. Sul dominio nostro resta il path relativo.
+const API_BASE =
+  typeof window !== 'undefined' && window.location.host.endsWith('.hf.space')
+    ? 'https://nicu.mango-dev.space'
+    : ''
+const ENDPOINT = API_BASE + '/api/log'
 
 // Id di sessione effimero (un "giro" di chat), rigenerato a ogni reload.
 function makeSessionId(): string {

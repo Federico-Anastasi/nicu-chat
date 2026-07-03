@@ -453,6 +453,13 @@ html, body {
   margin: 6px 0 0;
 }
 
+/* Avviso lingua per lo Space HF (pubblico internazionale) */
+.hero-lang-note {
+  font-size: 0.82rem;
+  color: var(--sun-warm);
+  margin-top: -4px;
+}
+
 .modal-footer-link {
   font-size: 0.75rem;
   text-align: center;

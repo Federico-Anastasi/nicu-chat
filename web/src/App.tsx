@@ -36,6 +36,11 @@ const SUGGESTED_PROMPTS = [
 // Link "per i curiosi" nel modal info — solo quelli valorizzati vengono resi.
 // ---------------------------------------------------------------------------
 
+// Sullo Space Hugging Face il pubblico è internazionale: una riga in inglese
+// avvisa che Nicu parla solo italiano. Sul nostro dominio non appare.
+const IS_HF_SPACE =
+  typeof window !== 'undefined' && window.location.host.endsWith('.hf.space')
+
 const CURIOUS_LINKS = {
   github: 'https://github.com/Federico-Anastasi/nicu-chat',
   huggingface: 'https://huggingface.co/federico-anastasi/nicu-20m',
@@ -648,6 +653,11 @@ export default function App() {
             <p className="hero-sub">
               Due chiacchiere, una risata, buona compagnia.
             </p>
+            {IS_HF_SPACE && (
+              <p className="hero-lang-note">
+                🇮🇹 Nicu only speaks Italian — try «Ciao Nicu! Chi sei?»
+              </p>
+            )}
             <Composer
               input={input}
               onChange={setInput}
