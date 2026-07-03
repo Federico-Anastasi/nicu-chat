@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+<defs>
+  <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="rgba(30,50,70,0.18)"/>
+  </filter>
+  <linearGradient id="acc" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#e86a2b"/>
+    <stop offset="1" stop-color="#c4520a"/>
+  </linearGradient>
+  <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#e86a2b"/>
+  </marker>
+</defs>
+<rect x="20" y="24" width="330" height="312" rx="18" fill="#f2f6fa" stroke="#dbe5ee" stroke-width="1.5" stroke-dasharray="6 5"/>
+<text x="40" y="54" font-size="12.5" font-weight="700" letter-spacing="1.5" fill="#5b7690">MAIN THREAD</text>
+<g filter="url(#soft)"><rect x="50" y="130" width="270" height="96" rx="14" fill="#ffffff" stroke="#d5e0ea" stroke-width="1.5"/></g>
+<text x="185.0" y="171.0" text-anchor="middle" font-size="15.5" font-weight="600" fill="#16283c">React chat UI</text>
+<text x="185.0" y="193.0" text-anchor="middle" font-size="12" fill="#5b7690">streams tokens into the bubble</text>
+<rect x="470" y="24" width="470" height="312" rx="18" fill="#f2f6fa" stroke="#dbe5ee" stroke-width="1.5" stroke-dasharray="6 5"/>
+<text x="490" y="54" font-size="12.5" font-weight="700" letter-spacing="1.5" fill="#5b7690">WEB WORKER</text>
+<g filter="url(#soft)"><rect x="500" y="56" width="410" height="76" rx="14" fill="#ffffff" stroke="#d5e0ea" stroke-width="1.5"/></g>
+<text x="705.0" y="87.0" text-anchor="middle" font-size="15.5" font-weight="600" fill="#16283c">BPE tokenizer</text>
+<text x="705.0" y="109.0" text-anchor="middle" font-size="12" fill="#5b7690">pure TypeScript · vocab 6k</text>
+<path d="M705,134 L705,152" stroke="#9db4c8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+<g filter="url(#soft)"><rect x="500" y="154" width="410" height="76" rx="14" fill="url(#acc)" stroke="#c4520a" stroke-width="1.5"/></g>
+<text x="705.0" y="185.0" text-anchor="middle" font-size="15.5" font-weight="600" fill="#ffffff">ONNX Runtime Web</text>
+<text x="705.0" y="207.0" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.85)">WASM backend · 20M-param GPT</text>
+<path d="M705,232 L705,250" stroke="#9db4c8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+<g filter="url(#soft)"><rect x="500" y="252" width="410" height="76" rx="14" fill="#ffffff" stroke="#d5e0ea" stroke-width="1.5"/></g>
+<text x="705.0" y="283.0" text-anchor="middle" font-size="15.5" font-weight="600" fill="#16283c">Sampling</text>
+<text x="705.0" y="305.0" text-anchor="middle" font-size="12" fill="#5b7690">top-p · temperature · repetition penalty</text>
+<path d="M352,150 L468,150" stroke="#9db4c8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+<text x="410" y="138" text-anchor="middle" font-size="12" fill="#5b7690">generate(prompt)</text>
+<path d="M468,216 L352,216" stroke="#9db4c8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+<text x="410" y="240" text-anchor="middle" font-size="12" fill="#5b7690">token stream</text>
+</svg>
