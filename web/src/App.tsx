@@ -36,7 +36,11 @@ const SUGGESTED_PROMPTS = [
 // Link "per i curiosi" nel modal info — solo quelli valorizzati vengono resi.
 // ---------------------------------------------------------------------------
 
-const CURIOUS_LINKS = { github: '', huggingface: '', x: 'https://x.com/FedeAnastasi' }
+const CURIOUS_LINKS = {
+  github: 'https://github.com/Federico-Anastasi/nicu-chat',
+  huggingface: 'https://huggingface.co/federico-anastasi/nicu-20m',
+  x: 'https://x.com/FedeAnastasi',
+}
 
 // ---------------------------------------------------------------------------
 // Avatar di Nicu — la faccia del personaggio, usata ovunque (niente più "N").
