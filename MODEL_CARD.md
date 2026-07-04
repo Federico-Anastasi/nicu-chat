@@ -18,14 +18,16 @@ devices.
 
 nanoGPT-style decoder-only transformer. All three sizes share vocabulary
 (6,000 tokens, ByteLevel BPE trained on the model's own corpus), context
-window (512 tokens), and export format (ONNX, opset 17, fp32). They differ
+window (512 tokens), and export format (ONNX, opset 17, fp32 + dynamic
+int8 — the int8 export was judged blind against fp32 on a 204-case
+character-fidelity suite with no measurable quality loss). They differ
 only in depth and width:
 
-| Size | Layers | Heads | Embedding dim | Parameters | File size (fp32) |
-|---|---|---|---|---|---|
-| S | 9 | 8 | 192 | 5.25M | ~21 MB |
-| M | 10 | 8 | 256 | 9.57M | ~38 MB |
-| **L** (default) | 15 | 8 | 320 | 20.6M | ~84 MB |
+| Size | Layers | Heads | Embedding dim | Parameters | ONNX fp32 | ONNX int8 | Hub |
+|---|---|---|---|---|---|---|---|
+| S | 9 | 8 | 192 | 5.3M | ~27 MB | ~8 MB | [nicu-5m](https://huggingface.co/federico-anastasi/nicu-5m) |
+| M | 10 | 8 | 256 | 9.6M | ~46 MB | ~13 MB | [nicu-9m](https://huggingface.co/federico-anastasi/nicu-9m) |
+| **L** (default) | 15 | 8 | 320 | 20.6M | ~91 MB | ~24 MB | [nicu-20m](https://huggingface.co/federico-anastasi/nicu-20m) |
 
 ## Training data
 

@@ -1,173 +1,208 @@
-# Nicu Web — Sicilian toy-AI that runs on your phone
+# Nicu Web — toy-AI catanese che gira sul telefono
 
-Chat interface for **Nicu**, a ~20M-parameter toy-AI that runs **entirely on
-your device** (browser/phone): inference is fully client-side, no model
-server involved.
+Interfaccia chat per **Nicu**, una toy-AI da **~20M di parametri** che gira
+**interamente sul dispositivo** (browser/telefono): l'**inferenza** è tutta
+client-side, nessun server di modello. (Gli scambi sono comunque loggati sul
+backend — vedi §"Logging conversazioni".)
 
-> **Live:** https://nicu.chat
+> **LIVE:** https://nicu.chat (deploy: `../deploy/README.md`; il vecchio
+> nicu.mango-dev.space fa 301, con /api/* ancora attivo per lo Space HF).
+> Posizionamento e tono di voce: vedi memoria `nicu-brand-voice`.
 
-## Active model
+## Modello attivo
 
 ```
-bpe_synth.json       →  ByteLevel BPE tokenizer (vocab 6000)
-nicu-l-v9-sft.onnx   →  nanoGPT fp32, 20.6M params (15 layers), block_size 512 (~84 MB)
-onnxruntime-web@1.18 →  ONNX engine, WASM-only build (no WebGPU) — see "onnxruntime-web: version pinned" below
+nicu-l-sft-v10.tokenizer.json →  tokenizer ByteLevel BPE (vocab 6000, pin per-ckpt)
+nicu-l-sft-v10.onnx           →  nanoGPT fp32, 20,6M param (15 strati), block_size 512  (~84 MB)
+onnxruntime-web@1.18 →  motore ONNX, build WASM-only (NO WebGPU) — vedi §"onnxruntime-web: versione bloccata"
 ```
 
-> `MODEL_ID` (in `src/lib/inference.ts`) is the single source of truth for
-> the model name. Export ONNX from a checkpoint with
-> `python tools/export_onnx.py --ckpt <checkpoint.pt>` (reads vocab/block_size
-> from the checkpoint config — if those change, update `BLOCK_SIZE`/`VOCAB_SIZE`
-> in `inference.ts` accordingly).
+> Lo `MODEL_ID` (in `src/lib/inference.ts`, ora `nicu-L-sft-v10`) è la fonte unica del nome modello:
+> va loggato a ogni turno e va tenuto allineato al file `.onnx` servito.
+> Export ONNX da un checkpoint: `python ../export_onnx.py --ckpt out/nicu-L-sft-v10.pt`
+> (legge vocab/block_size dalla cfg del checkpoint — **se cambiano, aggiorna
+> `BLOCK_SIZE`/`VOCAB_SIZE` in `inference.ts`**).
 
-## How it works (per message)
+## Come funziona (per messaggio)
 
-1. **Conversation memory** (toggle, default ON): with the toggle on, Nicu
-   receives recent history as `"Utente: …\nNicu: …\nUtente: <msg>\nNicu:"`;
-   with it off, just the current message. Text is tokenized with the ByteLevel
-   BPE tokenizer into an array of ids.
-2. Each autoregressive step feeds all ids to the model (truncated to
-   `block_size` 512) and reads `logits[0, last, :]` (shape `[6000]`).
-3. Sampling: repetition penalty **1.15** → temperature **1.0** → softmax →
-   nucleus top-p **0.92** → multinomial sampling.
-4. **Stop** on `<|endoftext|>` (id 0), on `max token`, or on a stop-sequence
-   (`\nUtente:` / `\nNicu:`) so the model can't invent a fake continued
-   dialogue inside its own reply.
-5. Streaming decode — the chat bubble updates token by token.
+1. **Memoria conversazione (toggle, default ON):** col toggle attivo Nicu riceve
+   la storia recente `"Utente: …\nNicu: …\nUtente: <msg>\nNicu:"`; col toggle OFF
+   solo il messaggio corrente. → tokenizer ByteLevel BPE → array di id. (La memoria
+   ON è stata riabilitata sulla famiglia L, che regge il multiturno; sui nano più
+   piccoli amplificava la ripetizione delle "mosse" — vedi `nicu-stateless-decision`.)
+2. Ogni step autoregressivo: tutti gli id al modello (troncati a `block_size`
+   512), si prende `logits[0, last, :]` (shape `[6000]`).
+3. Sampling: repetition_penalty **1.15** → temperatura **1.0** → softmax →
+   top_p nucleus **0.92** → campionamento multinomiale. (Default in
+   `DEFAULT_PARAMS`, tarati con uno sweep: 1.0/1.15 = miglior compromesso
+   colore/coerenza; sotto 0.5 spento, sopra 1.3 sgrammatica, penalità >1.5 storce.)
+4. **Stop** su `<|endoftext|>` (id 0), su `max token`, oppure su **stop-sequence**
+   `\nUtente:` / `\nNicu:` (evita che il modello si auto-inventi un finto dialogo
+   dentro la risposta).
+5. Decodifica in streaming (la bolla si aggiorna token per token).
 
-The model only knows its small world (Catania, the sea, the grill, friends).
-On everything else it **deflects instead of making things up** — that's the
-character, not a bug.
+Il modello conosce solo il suo piccolo mondo (Catania, mare, griglia, amici).
+Su tutto il resto **devia senza inventare** — è il suo carattere, non un bug.
 
-## Quick start
+## Logging conversazioni
+
+Ogni scambio è inviato (fire-and-forget) a `POST /api/log` col campo `model`
+(= `MODEL_ID`), così nel DB del backend le conversazioni sono distinguibili per
+versione di modello. Su host `*.hf.space` (lo Space demo) il logger punta in
+assoluto a `https://nicu.chat` (CORS lato backend); il server salva anche
+l'`origin` per distinguere sito vs Space. In dev/preview senza backend
+fallisce in silenzio.
+
+## Avvio rapido
 
 ```bash
-cd web
-npm install                      # copies ORT's .wasm binaries into public/wasm/ (postinstall)
-# download the .onnx model into public/ (see the main README for the Hugging Face link)
-npm run dev                      # http://localhost:5173 — inference included
-npm run build && npm run preview # production build + preview (http://localhost:4173)
+cd projects/nicu/web
+npm install                      # copia i binari .wasm di ORT in public/wasm/ (postinstall)
+npm run dev                      # http://localhost:5173 — inferenza INCLUSA
+npm run build && npm run preview # build + anteprima di produzione (http://localhost:4173)
+# preview sulla LAN (test su telefono vero): npm run preview -- --host --port 4174
 ```
 
-## onnxruntime-web: pinned to 1.18 (do not casually upgrade)
+> ℹ️ **`npm run dev` ora testa anche l'inferenza.** ORT 1.18 carica i `.wasm`
+> direttamente (niente glue `.mjs` con `import()` dinamico, che su 1.19+ il dev
+> server Vite rifiutava da `/public`). Era questo il motivo per cui prima serviva
+> `build`+`preview`; con la 1.18 non è più necessario.
 
-**`onnxruntime-web` is pinned to `1.18.0` on purpose.** Don't bump it without
-reading this first.
+## Consenso e privacy
 
-Background: some iPhones/iPads used to fail with
-`no available backend found / previous call to 'initWasm()' failed` — on
-**iOS < 16.4** (no WASM SIMD) and on modern iOS under memory pressure. Two
-causes:
-1. **ORT ≥ 1.19 ships SIMD-only binaries** (no non-SIMD fallback) → on iOS
-   < 16.4 there is **no usable backend** → error. **1.18.x is the last
-   version that ships the non-SIMD `ort-wasm.wasm`**; 1.19 removed it.
-2. Older code tried **WebGPU first**; on iOS 18 `navigator.gpu` exists, but
-   its init (inside the ~26.8 MB JSEP build) could fail under memory
-   pressure and **poison** the shared WASM runtime (a memoized `aborted`
-   flag) — the WASM fallback then returned the same memoized error.
+Niente card né modal: sotto il composer c'è una **micro-riga sempre visibile**
+(`PrivacyLine` in App.tsx) — "Scrivendo a Nicu accetti che le chat siano salvate
+per migliorarlo — niente dati personali · Privacy". L'uso della chat vale come
+accettazione (informativa persistente, meglio di un avviso una-tantum). Il testo
+legale completo sta nella pagina statica `public/privacy.html` (nessun router,
+stile piatto da documento), linkata dalla riga e dal pannello "Cos'è Nicu?".
 
-Fix (in `src/lib/inference.ts` / `inference.worker.ts` /
-`inference.mainthread.ts`):
-- **`import * as ort from 'onnxruntime-web/wasm'`** — a WASM-only build. ORT
-  picks the binary at runtime: `ort-wasm-simd.wasm` on SIMD-capable devices,
-  **`ort-wasm.wasm` (non-SIMD) on iOS < 16.4**. No WebGPU/JSEP → no
-  poisoning, a smaller binary (~10 MB instead of ~26.8), smaller JS bundle
-  (~359 KB vs ~622 KB).
-- `ort.env.wasm.wasmPaths = '/wasm/'` (string-prefix form; ORT appends the
-  chosen filename). `numThreads = 1` (no SharedArrayBuffer / COOP-COEP
-  required, so it works without cross-origin isolation headers).
+## onnxruntime-web: versione bloccata a 1.18 (⚠️ NON aggiornare alla leggera)
 
-**If you ever want to upgrade ORT or re-enable WebGPU:** either stay on a
-version that ships a non-SIMD binary, or add an explicit WASM-SIMD capability
-probe with a fallback path — otherwise the iOS bug returns. WebGPU should
-still be gated off on iOS regardless (unreliable there, and its init can
-poison the WASM runtime). Model opset = 17 (`tools/export_onnx.py`), loadable
-by ORT up to opset 21.
+**`onnxruntime-web` è pinnato a `1.18.0` di proposito. Non bumparlo senza rileggere questo.**
 
-## Inference off the main thread (Web Worker)
+Contesto (bug risolto il 2026-07-01): alcuni iPhone/iPad davano
+`no available backend found / previous call to 'initWasm()' failed` — su
+**iOS < 16.4** (niente WASM SIMD) e su iOS moderni sotto pressione di memoria.
+Due cause:
+1. **ORT ≥ 1.19 spedisce SOLO binari SIMD** (niente fallback non-SIMD) → su iOS
+   < 16.4 (iPad 15.5, iPhone non aggiornati) **nessun backend** → errore. La
+   **1.18.x è l'ultima con `ort-wasm.wasm` non-SIMD**; 1.19 lo ha rimosso.
+2. Il vecchio codice provava **WebGPU per primo**; su iOS 18 `navigator.gpu`
+   esiste, ma la sua init (nella build JSEP da 26,8 MB) falliva sotto pressione
+   di memoria e **avvelenava** il runtime WASM condiviso (flag `aborted`
+   memoizzato) → il fallback wasm restituiva l'errore memoizzato.
 
-Inference runs in a **Web Worker** (`src/lib/inference.worker.ts`), not on
-the main thread: previously, during generation, the browser wouldn't paint or
-animate anything (a very visible "frozen page" on slower iPads/iPhones).
+Fix (in `src/lib/inference.ts`):
+- **`import * as ort from 'onnxruntime-web/wasm'`** — build WASM-only. ORT sceglie
+  il binario a runtime: `ort-wasm-simd.wasm` sui device con SIMD, **`ort-wasm.wasm`
+  (non-SIMD) su iOS < 16.4**. Niente WebGPU/JSEP → niente avvelenamento, binario
+  più leggero (~10 MB invece di 26,8), bundle JS più piccolo (359 vs 622 KB).
+- `ort.env.wasm.wasmPaths = '/wasm/'` (forma string-prefix; ORT vi aggiunge il
+  nome del file scelto). `numThreads = 1` (niente SharedArrayBuffer/COOP-COEP).
 
-- `src/lib/inference.ts` — public entry point (`loadModel`, `generate`,
-  `DEFAULT_PARAMS`, `MODEL_ID`, …), proxies to the worker via `postMessage`.
-  `App.tsx` doesn't know whether the worker or the main thread is behind it.
-- `src/lib/inference.worker.ts` — where the ORT import, the session, the
-  tokenizer, and the generation loop live (same WASM-only 1.18 config as
-  above). Yields control (`setTimeout(…, 0)`) after every token so a queued
-  `abort` gets processed between tokens.
-- `src/lib/inference.mainthread.ts` — the original main-thread path, kept as
-  a **fallback** used only if the Worker fails to start or doesn't respond
-  within `WORKER_INIT_TIMEOUT_MS` (20 s). Functionally identical, just without
-  the separate thread.
-- Protocol: main→worker `{type:'load'|'generate'|'abort', …}`, worker→main
-  `{type:'progress'|'ready'|'token'|'done'|'error', …}` (see the types in
+**Se un domani vuoi aggiornare ORT o riattivare WebGPU:** o resti su una versione
+con binario non-SIMD, o aggiungi un capability-check (probe WASM SIMD) + un
+fallback esplicito, altrimenti il bug iOS torna. WebGPU va comunque **gated fuori
+su iOS** (lì è assente/inaffidabile e la sua init può avvelenare il wasm).
+Opset del modello = 17 (`export_onnx.py`), caricabile fino a ORT ≤ opset 21.
+
+## Inferenza fuori dal main thread (Web Worker)
+
+L'inferenza gira in un **Web Worker** (`src/lib/inference.worker.ts`), non più
+sul main thread: prima, durante la generazione, il browser non dipingeva/
+animava niente ("pagina bloccata", molto evidente su iPad/iPhone lenti).
+
+- `src/lib/inference.ts` — punto d'ingresso pubblico (stesse firme di sempre:
+  `loadModel`, `generate`, `DEFAULT_PARAMS`, `MODEL_ID`…), fa da **proxy**
+  verso il worker via `postMessage`. App.tsx non sa se dietro c'è il worker o
+  il main thread.
+- `src/lib/inference.worker.ts` — vive qui l'import ORT (stessa config
+  wasm-only 1.18, vedi sotto), la sessione, il tokenizer, il loop di
+  generazione. Cede il controllo (`setTimeout(…, 0)`) a ogni token, così un
+  `abort` in coda viene processato tra un token e l'altro.
+- `src/lib/inference.mainthread.ts` — il vecchio percorso main-thread,
+  invariato: **fallback** usato se il Worker non si crea o non risponde entro
+  20 s (vedi `WORKER_INIT_TIMEOUT_MS` in `inference.ts`). Stesso identico
+  risultato funzionale, solo senza thread separato.
+- Protocollo: main→worker `{type:'load'|'generate'|'abort', …}`, worker→main
+  `{type:'progress'|'ready'|'token'|'done'|'error', …}` (vedi i tipi in
   `inference.worker.ts`).
+- Istanziato con `new Worker(new URL('./inference.worker.ts', import.meta.url),
+  {type:'module'})` — Vite lo bundla come chunk separato; Safari 15+ supporta i
+  module worker (iPad target 15.5, ok).
 
 ## UI (src/App.tsx)
 
-- Full-width layout (edge-to-edge header/footer, ~820px centered column).
-- Grouped empty state: logo, headline, pill-shaped input, suggested prompts.
-- Header: brand on the left, two icon buttons on the right — info (opens the
-  "What is Nicu?" modal, which also holds the collapsed advanced settings and
-  the privacy link) and new chat (only shown once a conversation exists).
-- Share card (`src/lib/share.ts`): every reply has a "Share" button that
-  renders a chat-style branded PNG (user bubble + Nicu bubble) and uses the
-  Web Share API (or downloads on desktop).
-- `NicuFace`: the character's face with 3 expressions (`idle`, `happy`,
-  `boh` = the "I don't know" shrug), used across the header, chat bubbles,
-  hero, share card, and loading screen. Assets in `public/`.
+- **Full-width** come le grandi chat (header/footer edge-to-edge, contenuto
+  centrato in colonna ~820px).
+- **Stato vuoto raggruppato** al centro: logo, headline, **input a pillola**
+  (bottone tondo dentro), prompt-trabocchetto.
+- **Header** una riga: brand a sinistra, a destra due bottoni-icona — ⓘ apre il
+  **modal "Cos'è Nicu?"** (overlay: copy per l'utente medio senza numeri,
+  "Per i curiosi" con link GitHub/HF/X da `CURIOUS_LINKS`, "Impostazioni
+  avanzate" collassate con parametri+memoria, link privacy) e ↻ Nuova chat
+  (solo quando esiste una conversazione). Su `*.hf.space` la hero mostra una
+  riga in inglese "Nicu only speaks Italian".
+- **Share-card** (`src/lib/share.ts`): ogni risposta ha "Condividi" → PNG 4:5
+  in stile chat (bolla utente arancio con codina + bolla Nicu con avatar,
+  contenuto centrato, fascia brand col solo dominio da `location.host`) e usa
+  Web Share (WhatsApp/IG su mobile) o download su desktop.
+- **Avatar-personaggio** (`NicuFace`, non più la "N"): il volto di Nicu con 3
+  espressioni, usato ovunque — `idle` (header + bolle chat), `happy` (hero +
+  share-card), `boh` = spallucciata "non lo so" (loading). Asset in `public/`:
+  `nicu-idle.png` / `nicu-happy.png` (cerchio) e `nicu-boh.png` (quadrata, le mani
+  escono dal cerchio). Favicon/PWA icons e `og.png` rigenerati dal volto `idle`/`happy`.
 
-## Download sizes (first load)
+## Dimensioni download (prima apertura)
 
-| File                 | Size    |
-|----------------------|---------|
-| model `.onnx`        | ~84 MB  |
-| `bpe_synth.json`     | ~0.4 MB |
-| ORT WASM binary       | ~10 MB  |
-| app JS + CSS         | ~0.5 MB |
+| File                 | Dimensione |
+|----------------------|-----------|
+| `nicu-l-sft-v10.onnx` | ~84 MB   |
+| `nicu-l-sft-v10.tokenizer.json` | ~0,4 MB |
+| WASM ORT (1 binario) | ~10 MB    |
+| JS + CSS app         | ~0,5 MB   |
 
-The model and tokenizer are cached (Cache Storage in the worker, with
-automatic cleanup of stale versions on every successful load) — after the
-first visit nothing re-downloads. The WASM-only build means ORT only
-downloads a single binary (~10 MB, vs ~27 MB for the JSEP/WebGPU build).
+Modello + tokenizer cache-ati (`Cache-Control` immutable lato nginx + Cache
+Storage nel worker, con cleanup automatico delle versioni vecchie a ogni load
+riuscito) → dalla seconda visita non si riscaricano. Con la build WASM-only
+ORT scarica **un solo** binario (~10 MB, non i 27 MB della JSEP). **gzip ON**
+(2026-07-02) su wasm/js/css/json lato nginx. **Perf da migliorare:** l'int8
+~10 MB del modello (`export_onnx.py --int8`) taglierebbe altri ~28 MB.
 
-## Structure
+## Struttura
 
 ```
 web/
 ├── public/
-│   ├── nicu-l-v9-sft.onnx        model (not committed — download from Hugging Face)
-│   ├── bpe_synth.json            ByteLevel BPE tokenizer (vocab 6000)
-│   ├── nicu-idle/happy/boh.png   character avatar (3 expressions)
-│   ├── favicon.png, apple-touch-icon.png, icon-192/512.png
-│   ├── og.png                    social preview image
-│   ├── manifest.webmanifest
-│   └── wasm/                     ORT 1.18 .wasm binaries (generated by npm install)
+│   ├── nicu-l-sft-v10.onnx  modello ONNX (fp32, 20,6M param, vocab 6k, block 512)
+│   ├── nicu-l-sft-v10.tokenizer.json  tokenizer ByteLevel BPE (vocab 6000, pin per-ckpt)
+│   ├── nicu-idle/happy/boh.png  avatar-personaggio (le 3 espressioni)
+│   ├── favicon.png, apple-touch-icon.png, icon-192/512.png  icone dal volto idle
+│   ├── og.png               anteprima social (volto happy + claim, 1200×630)
+│   ├── manifest.webmanifest icone PWA, wasm/ …
+│   └── wasm/                binari .wasm di ORT 1.18 (copiati da setup-wasm)
 ├── src/
 │   ├── lib/
-│   │   ├── tokenizer.ts             ByteLevel BPE, pure TypeScript
-│   │   ├── inference.ts             public proxy to the worker (MODEL_ID, DEFAULT_PARAMS…)
-│   │   ├── inference.worker.ts      ONNX + sampling + generation, inside a Web Worker
-│   │   ├── inference.mainthread.ts  main-thread fallback (if the worker fails to start)
-│   │   ├── logger.ts                POST /api/log (optional — see below)
-│   │   └── share.ts                 canvas-based share card
-│   └── App.tsx                  React UI
+│   │   ├── tokenizer.ts          ByteLevel BPE puro TypeScript
+│   │   ├── inference.ts          proxy pubblico verso il worker (MODEL_ID, DEFAULT_PARAMS…)
+│   │   ├── inference.worker.ts   ONNX + sampling + generazione, dentro un Web Worker
+│   │   ├── inference.mainthread.ts  fallback main-thread (se il worker non parte)
+│   │   ├── logger.ts             POST /api/log (con model)
+│   │   └── share.ts              share-card su canvas
+│   └── App.tsx              UI React (full-width, pillola, share)
 └── vite.config.ts
 ```
 
-## Logging
+> `scripts/verify.mjs` valida gli invarianti del tokenizer/modello ATTUALMENTE
+> serviti (`nicu-l-sft-v10.tokenizer.json` vocab 6000, `nicu-l-sft-v10.onnx` block 512): i valori
+> attesi sono una baseline di regressione JS (tokenizer + onnxruntime-node),
+> non una parità con l'export Python — rigenerali se cambi modello/tokenizer.
 
-`src/lib/logger.ts` fire-and-forget-POSTs each exchange to `/api/log`. This
-is how the live site (nicu.chat) collects conversations to improve
-the model — it's disclosed to users via the privacy line in the UI. There is
-no backend included in this repo; without one, logging just fails silently
-(harmless), including in local dev.
+## Header server (nginx/Caddy)
 
-> `scripts/verify.mjs` checks the tokenizer/model invariants of whatever is
-> currently in `public/` (`bpe_synth.json` vocab 6000, model block 512): the
-> expected values are a JS-side regression baseline (tokenizer +
-> onnxruntime-node), not a parity check against the Python export — it needs
-> the `.onnx` file present in `public/` to run, and should be regenerated if
-> you swap in a different model/tokenizer.
+**Niente COOP/COEP** (rimossi: single-thread, niente SharedArrayBuffer → gira
+anche su iOS Safari). Solo `Cross-Origin-Resource-Policy: same-origin`. `.onnx`
+`immutable`; `/wasm/` servito `no-cache` (così un cambio versione ORT non lascia
+binari stantii in cache — i file `.wasm` hanno nome fisso). Config in
+`../deploy/web/nginx.conf`.

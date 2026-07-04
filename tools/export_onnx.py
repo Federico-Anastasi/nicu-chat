@@ -46,7 +46,9 @@ def main():
         Wrap(model), (dummy,), str(out_fp32),
         input_names=["idx"], output_names=["logits"],
         dynamic_axes={"idx": {0: "batch", 1: "seq"}, "logits": {0: "batch", 1: "seq"}},
-        opset_version=a.opset, do_constant_folding=False,
+        # folding ON: senza, i pesi restano nodi Constant (non initializer) e
+        # quantize_dynamic non li tocca -> int8 "finto" (84->77 MB invece di 84->24).
+        opset_version=a.opset, do_constant_folding=True,
     )
 
     # --- verifica parita' (PyTorch vs onnxruntime) su piu' lunghezze ---

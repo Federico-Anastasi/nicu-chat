@@ -76,19 +76,21 @@ dialogues, 6,000-token BPE vocab, 512-token context) — so they form a clean
 size-scaling comparison for a character model, not three different training
 runs.
 
-| Size | Layers | Heads | Embedding dim | Parameters | File size (fp32) | Download |
-|---|---|---|---|---|---|---|
-| S | 9 | 8 | 192 | 5.25M | ~21 MB | coming with v1.0 |
-| M | 10 | 8 | 256 | 9.57M | ~38 MB | coming with v1.0 |
-| **L** (default, live) | 15 | 8 | 320 | 20.6M | ~84 MB | [federico-anastasi/nicu-20m](https://huggingface.co/federico-anastasi/nicu-20m) |
+| Size | Layers | Heads | Embedding dim | Parameters | ONNX fp32 | ONNX int8 | Download |
+|---|---|---|---|---|---|---|---|
+| S | 9 | 8 | 192 | 5.3M | ~27 MB | ~8 MB | [federico-anastasi/nicu-5m](https://huggingface.co/federico-anastasi/nicu-5m) |
+| M | 10 | 8 | 256 | 9.6M | ~46 MB | ~13 MB | [federico-anastasi/nicu-9m](https://huggingface.co/federico-anastasi/nicu-9m) |
+| **L** (default, live) | 15 | 8 | 320 | 20.6M | ~91 MB | ~24 MB | [federico-anastasi/nicu-20m](https://huggingface.co/federico-anastasi/nicu-20m) |
 
 All three share: vocab size 6,000 (ByteLevel BPE, trained on the synthetic
-corpus), context/block size 512 tokens, fp32 precision, nanoGPT-style
-decoder-only transformer architecture, exported to ONNX (opset 17) via
-`tools/export_onnx.py`.
+corpus), context/block size 512 tokens, nanoGPT-style decoder-only
+transformer architecture, exported to ONNX (opset 17) via
+`tools/export_onnx.py` (fp32 + dynamic-int8).
 
-**Default / recommended: L** — it's the version running at the live demo
-above. S and M exist for size-scaling comparisons and lower-end devices.
+**Default / recommended: L, int8** — it's the version running at the live
+demo above (the int8 export was judged blind against fp32 over a 204-case
+character-fidelity suite: no measurable quality loss, at ¼ the download).
+S and M exist for size-scaling comparisons and lower-end devices.
 
 ## Run locally
 
@@ -105,11 +107,12 @@ and bundles); you need an `.onnx` in `web/public/` to actually chat with
 Nicu.
 
 To run a size other than the default, download that size's `.onnx` into
-`web/public/` and update two places to match its filename: the hardcoded
-model path in `web/src/App.tsx` (currently `/nicu-l-v9-sft.onnx`) and
-`MODEL_ID` in `web/src/lib/inference.ts` (currently `nicu-L-v9-sft`, used
-only for logging which model served a conversation — it doesn't drive the
-load path).
+`web/public/` and update three places to match its filename: the model path
+in `web/src/App.tsx` (currently `/nicu-l-sft-v10.int8.onnx`), the tokenizer
+path next to it (each size ships its own pinned `tokenizer.json`), and
+`MODEL_ID` in `web/src/lib/inference.ts` (currently `nicu-L-sft-v10-int8`,
+used only for logging which model served a conversation — it doesn't drive
+the load path).
 
 ## What's NOT here
 

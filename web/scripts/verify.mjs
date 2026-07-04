@@ -1,7 +1,7 @@
 /**
  * verify.mjs — verifica end-to-end del tokenizer e dell'inferenza greedy sul
- * modello ATTUALMENTE servito da `public/` (`bpe_synth.json` + `nicu-l-v9-sft.onnx`,
- * vocab 12000, block_size 512).
+ * modello ATTUALMENTE servito da `public/` (`nicu-l-sft-v10.tokenizer.json` +
+ * `nicu-l-sft-v10.onnx`, vocab 6000, block_size 512).
  *
  * ⚠️ I valori attesi qui sotto NON sono una parità con l'export Python
  * (`sample_synth.py`): sono una BASELINE DI REGRESSIONE presa eseguendo QUESTO
@@ -156,7 +156,7 @@ function buildTokenizer(tokJson) {
 // ============================================================================
 
 const BLOCK_SIZE = 512   // nicu-M-v9b: contesto 512
-const VOCAB_SIZE = 6000  // nicu-L-v9-sft: BPE bpe_synth
+const VOCAB_SIZE = 6000  // nicu-L-sft-v10: BPE 6k (tokenizer pinnato per-ckpt)
 
 async function runStep(session, ids) {
   const slice = ids.length > BLOCK_SIZE ? ids.slice(ids.length - BLOCK_SIZE) : ids
@@ -222,7 +222,7 @@ async function main() {
   const results = []
 
   // Carica tokenizer
-  const tokPath = join(PUB_DIR, 'bpe_synth.json')
+  const tokPath = join(PUB_DIR, 'nicu-l-sft-v10.tokenizer.json')
   console.log(`[1/3] Carico tokenizer: ${tokPath}`)
   if (!existsSync(tokPath)) {
     console.error(`  File non trovato: ${tokPath}`)
@@ -241,7 +241,7 @@ async function main() {
   // TEST: encode (baseline di regressione — vedi commento in testa al file)
   // -------------------------------------------------------------------------
   const ENC_INPUT    = 'Utente: ciao\nNicu:'
-  const ENC_EXPECTED = [293, 26, 926, 199, 290, 26]
+  const ENC_EXPECTED = [287, 26, 972, 199, 285, 26]
 
   const encResult = tokenizer.encode(ENC_INPUT)
 
@@ -262,7 +262,7 @@ async function main() {
   // -------------------------------------------------------------------------
   // TEST: greedy generate (baseline di regressione — non parità Python)
   // -------------------------------------------------------------------------
-  const MODEL_PATH = join(PUB_DIR, 'nicu-l-v9-sft.onnx')
+  const MODEL_PATH = join(PUB_DIR, 'nicu-l-sft-v10.int8.onnx')
   console.log()
   console.log(`[2/3] Carico modello ONNX: ${MODEL_PATH}`)
   if (!existsSync(MODEL_PATH)) {
@@ -274,8 +274,8 @@ async function main() {
   })
 
   const GREEDY_PROMPT   = 'Utente: come ti chiami?\nNicu:'
-  const GREEDY_EXPECTED = [609, 1844, 1056, 12, 2636, 381, 67, 14]
-  const GREEDY_TEXT     = ' Mi chiamo Nicu, catanese doc.'
+  const GREEDY_EXPECTED = [938, 12, 289, 663, 12, 1074, 1910, 281, 1657, 289, 438, 296, 780, 14, 576, 598, 320, 300, 353, 4764, 12, 312, 2066, 514]
+  const GREEDY_TEXT     = ' Nicu, di Catania, amico semplice che vive di mare e amici. La griglia è la mia arte, il resto lo'
 
   console.log()
   console.log(`[3/3] Greedy decode (max 24 token): "${GREEDY_PROMPT}"`)

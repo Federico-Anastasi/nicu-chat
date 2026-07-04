@@ -37,13 +37,13 @@ import type {
 
 // Identificativo del modello attivo — fonte unica, loggato a ogni turno così
 // nel DB si distinguono le conversazioni per versione di modello.
-export const MODEL_ID = 'nicu-L-v9-sft'
+export const MODEL_ID = 'nicu-L-sft-v10-int8'
 
 // Il worker carica anche il tokenizer (lui esegue encode/decode durante la
 // generazione); il main thread ne carica una seconda copia leggera (~0,8 MB,
 // dalla cache HTTP dopo il primo giro) solo per soddisfare l'API esistente
 // di App.tsx (che chiama `loadTokenizer` da ./tokenizer prima di loadModel).
-const TOKENIZER_URL = '/bpe_synth.json'
+const TOKENIZER_URL = '/nicu-l-sft-v10.tokenizer.json'
 
 // Se il worker non risponde con 'ready' entro questa soglia (creazione fallita,
 // bloccato, CSP che vieta i module worker, …) → fallback main-thread.

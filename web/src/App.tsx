@@ -343,6 +343,9 @@ function InfoModal({ open, onClose, params, onChange, memoryOn, onToggleMemory }
           <p className="modal-footer-link">
             <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy e condizioni d'uso</a>
           </p>
+          <p className="modal-footer-link">
+            Vuoi crearne uno tuo? &rarr; <a href="https://nicu.chat/crea">dimmi che personaggio</a>
+          </p>
         </div>
       </div>
     </div>
@@ -445,13 +448,13 @@ export default function App() {
     async function init() {
       try {
         // Carica tokenizer (piccolo, quasi immediato)
-        const tok = await loadTokenizer('/bpe_synth.json')
+        const tok = await loadTokenizer('/nicu-l-sft-v10.tokenizer.json')
         if (cancelled) return
         tokenizerRef.current = tok
 
-        // Carica modello ONNX (38 MB, con progress)
+        // Carica modello ONNX (int8, 24 MB, con progress)
         const { session, backend: be } = await loadModel(
-          '/nicu-l-v9-sft.onnx',
+          '/nicu-l-sft-v10.int8.onnx',
           (pct, msg) => {
             if (!cancelled) {
               setLoadProgress(pct)
