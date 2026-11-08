@@ -4,17 +4,16 @@
 // In dev (Vite) non c'è backend → fallisce in silenzio, nessun problema.
 // ---------------------------------------------------------------------------
 
-import type { GenerationParams } from './inference'
+import type { GenerationParams } from '../core/config.ts'
+import { IS_HF_SPACE } from './ambiente.ts'
+import { leggiConsenso } from './archivio.ts'
 
 // Su host terzi (es. lo Space Hugging Face) non c'è il backend: si punta in
 // assoluto a quello del sito. Sul dominio nostro resta il path relativo.
-const API_BASE =
-  typeof window !== 'undefined' && window.location.host.endsWith('.hf.space')
-    ? 'https://nicu.chat'
-    : ''
+const API_BASE = IS_HF_SPACE ? 'https://nicu.chat' : ''
 const ENDPOINT = API_BASE + '/api/log'
 
-// Id di sessione effimero (un "giro" di chat), rigenerato a ogni reload.
+// Una conversazione = una sessione di log. Il valore viaggia con la chat salvata (vedi ripristinaSessione).
 function makeSessionId(): string {
   const k = 'nicu_session_id'
   try {
@@ -30,10 +29,18 @@ function makeSessionId(): string {
 
 let sessionId = makeSessionId()
 
+export const sessioneCorrente = () => sessionId
+
 /** Avvia una nuova sessione di log (es. quando l'utente apre una "Nuova chat"). */
 export function newSession(): void {
   try { sessionStorage.removeItem('nicu_session_id') } catch { /* ignore */ }
   sessionId = makeSessionId()
+}
+
+/** Riprende la sessione di una chat ripristinata: i turni di una stessa conversazione restano nella stessa sessione di log. */
+export function ripristinaSessione(id: string): void {
+  sessionId = id
+  try { sessionStorage.setItem('nicu_session_id', id) } catch { /* ignore */ }
 }
 
 export interface TurnLog {
@@ -48,6 +55,7 @@ export interface TurnLog {
 
 // Logga un singolo scambio utente→nicu. Mai await: parte e basta.
 export function logTurn(turn: TurnLog): void {
+  if (leggiConsenso() !== 'si') return
   try {
     const body = JSON.stringify({
       session: sessionId,
@@ -56,7 +64,7 @@ export function logTurn(turn: TurnLog): void {
       params: turn.params,
       backend: turn.backend,
       model: turn.model,
-      ua: navigator.userAgent,
+      ua: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
     })
     // keepalive: sopravvive anche se l'utente chiude la tab subito dopo.
     fetch(ENDPOINT, {

@@ -94,14 +94,14 @@ def pipeline(t):
     row1 = [
         ("Character sheet", "identity · voice · boundaries"),
         ("Teacher LLM", "writes in-character dialogues"),
-        ("Synthetic corpus", "~565k dialogues · 38M tokens"),
+        ("Synthetic corpus", "~930k dialogues"),
         ("Quality filter", "typography · dialect · dedup"),
     ]
     row2 = [  # da destra verso sinistra
         ("BPE tokenizer", "ByteLevel · 6k vocab"),
-        ("Train from scratch", "S 5M · M 9.5M · L 20M"),
-        ("ONNX export", "opset 17 · fp32"),
-        ("Your browser", "on-device · no server"),
+        ("Train from scratch", "20M parameters · 15 layers"),
+        ("Preference tuning", "DPO on judged answers"),
+        ("ONNX int8 · 24 MB", "server by default · or on-device"),
     ]
 
     for i, (title, sub) in enumerate(row1):
@@ -122,11 +122,11 @@ def pipeline(t):
 
 
 # ---------------------------------------------------------------------------
-# Runtime: main thread ↔ web worker
+# Runtime: chat UI -> server (default) oppure Web Worker sul dispositivo
 # ---------------------------------------------------------------------------
 
 def runtime(t):
-    W, H = 960, 360
+    W, H = 960, 430
     s = svg_open(W, H, t)
 
     def container(x, y, w, h, label):
@@ -138,34 +138,40 @@ def runtime(t):
             f'letter-spacing="1.5" fill="{t["container_label"]}">{label}</text>\n'
         )
 
-    # main thread
-    s += container(20, 24, 330, 312, 'MAIN THREAD')
-    s += node(50, 130, 270, 96, 'React chat UI', 'streams tokens into the bubble', t)
+    def label(x, y, text):
+        return (
+            f'<text x="{x}" y="{y}" text-anchor="middle" font-size="12" '
+            f'fill="{t["sub"]}">{text}</text>\n'
+        )
 
-    # web worker
-    s += container(470, 24, 470, 312, 'WEB WORKER')
-    wy = 56
-    steps = [
-        ('BPE tokenizer', 'pure TypeScript · vocab 6k', False),
-        ('ONNX Runtime Web', 'WASM backend · 20M-param GPT', True),
-        ('Sampling', 'top-p · temperature · repetition penalty', False),
-    ]
-    for i, (title, sub, acc) in enumerate(steps):
-        s += node(500, wy, 410, 76, title, sub, t, accent=acc)
-        if i < 2:
-            s += arrow(705, wy + 76 + 2, 705, wy + 76 + 20, t)
-        wy += 76 + 22
+    # browser
+    s += container(20, 24, 260, 352, 'BROWSER')
+    s += node(40, 170, 220, 96, 'React chat UI', 'streams tokens into the bubble', t)
+
+    # server (predefinito)
+    s += container(420, 24, 520, 168, 'SERVER · DEFAULT')
+    s += node(440, 62, 228, 108, 'nicu-infer', 'rate limit · queue · SSE stream', t)
+    s += arrow(670, 116, 702, 116, t)
+    s += node(704, 62, 216, 108, '4 worker processes', 'ONNX Runtime Node · KV cache', t, accent=True)
+
+    # dispositivo (opzionale)
+    s += container(420, 208, 520, 168, 'ON YOUR DEVICE · OPTIONAL')
+    s += node(440, 246, 228, 108, 'Web Worker', 'off the UI thread', t)
+    s += arrow(670, 300, 702, 300, t)
+    s += node(704, 246, 216, 108, 'ONNX Runtime Web', 'WASM · model kept in cache', t, accent=True)
 
     # frecce tra i due mondi
-    s += arrow(352, 150, 468, 150, t)
+    s += arrow(262, 200, 418, 116, t)
+    s += label(340, 132, 'POST /api/chat')
+    s += arrow(262, 236, 418, 300, t)
+    s += label(340, 300, 'postMessage')
+
+    # nucleo condiviso
     s += (
-        f'<text x="410" y="138" text-anchor="middle" font-size="12" '
-        f'fill="{t["sub"]}">generate(prompt)</text>\n'
-    )
-    s += arrow(468, 216, 352, 216, t)
-    s += (
-        f'<text x="410" y="240" text-anchor="middle" font-size="12" '
-        f'fill="{t["sub"]}">token stream</text>\n'
+        f'<rect x="20" y="392" width="920" height="30" rx="10" fill="{t["card"]}" '
+        f'stroke="{t["card_stroke"]}" stroke-width="1.5"/>\n'
+        f'<text x="480" y="412" text-anchor="middle" font-size="12.5" fill="{t["text"]}">'
+        f'same core on both sides (web/src/core): BPE tokenizer · prompt window · sampling · generation loop</text>\n'
     )
 
     return s + '</svg>\n'

@@ -1,8 +1,11 @@
 {
+  "id": "/",
   "name": "Nicu — l'amico catanese",
   "short_name": "Nicu",
-  "description": "L'unica AI che non sa niente. Tranne Catania. Gira tutta sul tuo telefono.",
+  "description": "L'unica AI che non sa niente. Tranne Catania. Due chiacchiere e una risata con Nicu, l'amico catanese.",
+  "lang": "it",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a1628",
   "theme_color": "#0a1628",
@@ -11,13 +14,19 @@
       "src": "/icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ]
 }

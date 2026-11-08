@@ -21,7 +21,7 @@
 <path d="M467,73.0 L485,73.0" stroke="#9db4c8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
 <g filter="url(#soft)"><rect x="490" y="30" width="212" height="86" rx="14" fill="#ffffff" stroke="#d5e0ea" stroke-width="1.5"/></g>
 <text x="596.0" y="66.0" text-anchor="middle" font-size="15.5" font-weight="600" fill="#16283c">Synthetic corpus</text>
-<text x="596.0" y="88.0" text-anchor="middle" font-size="12" fill="#5b7690">~565k dialogues · 38M tokens</text>
+<text x="596.0" y="88.0" text-anchor="middle" font-size="12" fill="#5b7690">~930k dialogues</text>
 <path d="M705,73.0 L723,73.0" stroke="#9db4c8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
 <g filter="url(#soft)"><rect x="728" y="30" width="212" height="86" rx="14" fill="#ffffff" stroke="#d5e0ea" stroke-width="1.5"/></g>
 <text x="834.0" y="66.0" text-anchor="middle" font-size="15.5" font-weight="600" fill="#16283c">Quality filter</text>
@@ -32,14 +32,14 @@
 <path d="M725,239.0 L707,239.0" stroke="#9db4c8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
 <g filter="url(#soft)"><rect x="490" y="196" width="212" height="86" rx="14" fill="#ffffff" stroke="#d5e0ea" stroke-width="1.5"/></g>
 <text x="596.0" y="232.0" text-anchor="middle" font-size="15.5" font-weight="600" fill="#16283c">Train from scratch</text>
-<text x="596.0" y="254.0" text-anchor="middle" font-size="12" fill="#5b7690">S 5M · M 9.5M · L 20M</text>
+<text x="596.0" y="254.0" text-anchor="middle" font-size="12" fill="#5b7690">20M parameters · 15 layers</text>
 <path d="M487,239.0 L469,239.0" stroke="#9db4c8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
 <g filter="url(#soft)"><rect x="252" y="196" width="212" height="86" rx="14" fill="#ffffff" stroke="#d5e0ea" stroke-width="1.5"/></g>
-<text x="358.0" y="232.0" text-anchor="middle" font-size="15.5" font-weight="600" fill="#16283c">ONNX export</text>
-<text x="358.0" y="254.0" text-anchor="middle" font-size="12" fill="#5b7690">opset 17 · fp32</text>
+<text x="358.0" y="232.0" text-anchor="middle" font-size="15.5" font-weight="600" fill="#16283c">Preference tuning</text>
+<text x="358.0" y="254.0" text-anchor="middle" font-size="12" fill="#5b7690">DPO on judged answers</text>
 <path d="M249,239.0 L231,239.0" stroke="#9db4c8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
 <g filter="url(#soft)"><rect x="14" y="196" width="212" height="86" rx="14" fill="url(#acc)" stroke="#c4520a" stroke-width="1.5"/></g>
-<text x="120.0" y="232.0" text-anchor="middle" font-size="15.5" font-weight="600" fill="#ffffff">Your browser</text>
-<text x="120.0" y="254.0" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.85)">on-device · no server</text>
+<text x="120.0" y="232.0" text-anchor="middle" font-size="15.5" font-weight="600" fill="#ffffff">ONNX int8 · 24 MB</text>
+<text x="120.0" y="254.0" text-anchor="middle" font-size="12" fill="rgba(255,255,255,0.85)">server by default · or on-device</text>
 <path d="M834.0,118 C834.0,157.0 834.0,157.0 834.0,192" stroke="#9db4c8" stroke-width="2" fill="none" marker-end="url(#arr)"/>
 </svg>

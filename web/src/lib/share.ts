@@ -12,6 +12,8 @@
 // parametri nel copy, nessun dominio hardcodato (window.location.host).
 // ---------------------------------------------------------------------------
 
+import { MODELLO } from '../core/config'
+
 // Palette (allineata a index.css)
 const SEA_DEEP = '#0a1628'
 const SEA_TOP = '#0d1f3a'
@@ -44,6 +46,8 @@ const CONTENT_BOTTOM = BAND_TOP - 30
 const NICU_AVATAR_R = 36
 const BUBBLE_GAP = 36 // tra bolla utente e bolla Nicu
 const ANSWER_MAX_CHARS = 420
+
+const ETICHETTA_AI = "Testo generato da un'intelligenza artificiale"
 
 // Bolla chat con la "codina": l'angolo in basso
 // verso il proprio lato (br per l'utente, bl per Nicu) ha raggio piccolo.
@@ -153,7 +157,10 @@ function drawBrandBand(ctx: CanvasRenderingContext2D, domain: string) {
   ctx.textBaseline = 'middle'
   ctx.fillStyle = SUN_WARM
   ctx.font = '800 38px system-ui, sans-serif'
-  ctx.fillText(domain, W / 2, BAND_TOP + BAND_H / 2)
+  ctx.fillText(domain, W / 2, BAND_TOP + BAND_H / 2 - 16)
+  ctx.fillStyle = MUTED
+  ctx.font = '500 22px system-ui, sans-serif'
+  ctx.fillText(ETICHETTA_AI, W / 2, BAND_TOP + BAND_H / 2 + 26)
 }
 
 export async function renderCard(userText: string, nicuText: string): Promise<HTMLCanvasElement> {
@@ -163,8 +170,8 @@ export async function renderCard(userText: string, nicuText: string): Promise<HT
   let headFace: HTMLImageElement | undefined
   try {
     ;[nicuFace, headFace] = await Promise.all([
-      loadImage('/nicu-happy.png'),
-      loadImage('/nicu-idle.png'),
+      loadImage('/nicu-happy-128.webp'),
+      loadImage('/nicu-idle-128.webp'),
     ])
   } catch { /* fallback logo */ }
 
@@ -306,12 +313,50 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   })
 }
 
-export type ShareOutcome = 'shared' | 'downloaded' | 'error'
+const TABELLA_CRC = Array.from({ length: 256 }, (_, n) => {
+  let c = n
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+  return c >>> 0
+})
+
+function crc32(byte: Uint8Array): number {
+  let c = 0xffffffff
+  for (const b of byte) c = TABELLA_CRC[(c ^ b) & 0xff] ^ (c >>> 8)
+  return (c ^ 0xffffffff) >>> 0
+}
+
+function xmpAi(dominio: string): string {
+  const x = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')
+  return '<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>'
+    + '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+    + '<rdf:Description rdf:about=""'
+    + ' xmlns:Iptc4xmpExt="http://iptc.org/std/Iptc4xmpExt/2008-02-29/"'
+    + ' xmlns:xmp="http://ns.adobe.com/xap/1.0/"'
+    + ' xmlns:dc="http://purl.org/dc/elements/1.1/"'
+    + ' Iptc4xmpExt:DigitalSourceType="http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"'
+    + ` xmp:CreatorTool="${x(`Nicu (${MODELLO.id}) · ${dominio}`)}">`
+    + `<dc:description><rdf:Alt><rdf:li xml:lang="x-default">${x(`${ETICHETTA_AI} · ${dominio}`)}</rdf:li></rdf:Alt></dc:description>`
+    + '</rdf:Description></rdf:RDF></x:xmpmeta><?xpacket end="r"?>'
+}
+
+export async function marcaPng(png: Blob, dominio: string): Promise<Blob> {
+  const byte = new Uint8Array(await png.arrayBuffer())
+  const fineIhdr = 8 + 12 + new DataView(byte.buffer).getUint32(8)
+  const dati = new TextEncoder().encode('iTXtXML:com.adobe.xmp     ' + xmpAi(dominio))
+  const blocco = new Uint8Array(12 + dati.length - 4)
+  const vista = new DataView(blocco.buffer)
+  vista.setUint32(0, dati.length - 4)
+  blocco.set(dati, 4)
+  vista.setUint32(blocco.length - 4, crc32(dati))
+  return new Blob([byte.subarray(0, fineIhdr), blocco, byte.subarray(fineIhdr)], { type: 'image/png' })
+}
+
+export type ShareOutcome = 'shared' | 'downloaded' | 'annullato' | 'error'
 
 export async function shareExchange(userText: string, nicuText: string): Promise<ShareOutcome> {
   try {
     const canvas = await renderCard(userText, nicuText)
-    const blob = await canvasToBlob(canvas)
+    const blob = await marcaPng(await canvasToBlob(canvas), currentDomain())
     const file = new File([blob], 'nicu.png', { type: 'image/png' })
 
     const nav = navigator as Navigator & {
@@ -338,7 +383,7 @@ export async function shareExchange(userText: string, nicuText: string): Promise
     return 'downloaded'
   } catch (e) {
     // l'utente che annulla lo share lancia AbortError: non è un errore vero
-    if (e instanceof DOMException && e.name === 'AbortError') return 'shared'
+    if (e instanceof DOMException && e.name === 'AbortError') return 'annullato'
     console.error('share error:', e)
     return 'error'
   }

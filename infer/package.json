@@ -1,0 +1,14 @@
+{
+  "name": "nicu-infer",
+  "version": "1.0.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node test.mjs"
+  },
+  "dependencies": {
+    "onnxruntime-node": "1.18.0"
+  }
+}

@@ -1,0 +1,8 @@
+*
+!infer/package.json
+!infer/package-lock.json
+!infer/server.mjs
+!infer/worker.mjs
+!web/src/core
+!web/public/*.onnx
+!web/public/*.tokenizer.json
